@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// For local development we use SQLite (zero config).
+// Switch datasource to postgresql + Neon connection string for production.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Game {
+  id              String    @id @default(cuid())
+  title           String
+  titleZh         String?
+  platforms       String    @default("[]") // JSON array stored as string: ["PC","PS5"]
+  genres          String    @default("[]") // JSON array stored as string: ["RPG","Action"]
+  status          String    @default("backlog") // completed | playing | dropped | backlog | wishlist
+  rating          Int?
+  difficulty      Int?
+  playTimeHours   Float?
+  completionPct   Int?
+  playYear        Int?
+  playDate        DateTime?
+  developer       String?
+  publisher       String?
+  steamAppId      String?
+  coverImageUrl   String?
+  screenshots     String    @default("[]") // JSON array of URLs
+  notes           String?   // Markdown notes
+  isRecommended   Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model UpcomingGame {
+  id            String    @id @default(cuid())
+  title         String
+  titleZh       String?
+  releaseDate   DateTime?
+  platforms     String    @default("[]")
+  genres        String    @default("[]")
+  price         String?
+  summary       String?
+  coverImageUrl String?
+  screenshots   String    @default("[]")
+  steamAppId    String?
+  developer     String?
+  publisher     String?
+  isInterested  Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
