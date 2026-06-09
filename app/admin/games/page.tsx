@@ -11,8 +11,18 @@ interface Game {
   genres: string[];
   status: string;
   rating: number | null;
+  difficulty: number | null;
+  playTimeHours: number | null;
+  completionPct: number | null;
   playYear: number | null;
+  playDate: string | null;
+  developer: string | null;
+  publisher: string | null;
   steamAppId: string | null;
+  coverImageUrl: string | null;
+  notes: string | null;
+  isRecommended: boolean;
+  screenshots: string[];
 }
 
 interface FormData {
@@ -78,11 +88,11 @@ export default function AdminGamesPage() {
       status: game.status,
       rating: game.rating?.toString() ?? "",
       playYear: game.playYear?.toString() ?? "",
-      developer: "",
-      publisher: "",
+      developer: game.developer ?? "",
+      publisher: game.publisher ?? "",
       steamAppId: game.steamAppId ?? "",
-      coverImageUrl: "",
-      notes: "",
+      coverImageUrl: game.coverImageUrl ?? "",
+      notes: game.notes ?? "",
     });
   }
 
