@@ -1,13 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const router = useRouter();
+
+  // 如果已有有效 session，直接跳转后台
+  useEffect(() => {
+    fetch("/api/games?pageSize=1")
+      .then((res) => {
+        if (res.ok) {
+          router.replace("/admin/games");
+        } else {
+          setChecking(false);
+        }
+      })
+      .catch(() => setChecking(false));
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,6 +46,14 @@ export default function AdminLoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checking) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-gray-500">检查登录状态...</p>
+      </div>
+    );
   }
 
   return (
@@ -64,7 +86,7 @@ export default function AdminLoginPage() {
           </button>
         </form>
         <p className="mt-4 text-center text-xs text-gray-500">
-          默认密码在 <code>.env</code> 文件的 <code>ADMIN_PASSWORD</code> 中设置
+          登录后 7 天内无需重复输入密码
         </p>
       </div>
     </div>

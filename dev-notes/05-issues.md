@@ -144,6 +144,87 @@ npm run dev
 
 ---
 
+## 9. 管理后台编辑时字段不显示数据库值
+
+**现象：** 点击「编辑」按钮，封面 URL、开发商、发行商、备注等字段显示为空，但数据库里明明有值。
+
+**原因：** `fillForm()` 函数中这些字段被硬编码为空字符串，没有从 `game` 对象读取：
+```typescript
+// ❌ 错误
+developer: "",          // 永远是空
+publisher: "",
+coverImageUrl: "",
+notes: "",
+```
+
+**解决：** 改为从 `game` 对象取值：
+```typescript
+// ✅ 正确
+developer: game.developer ?? "",
+publisher: game.publisher ?? "",
+coverImageUrl: game.coverImageUrl ?? "",
+notes: game.notes ?? "",
+```
+
+**教训：** 
+- 改 interface 字段时务必检查所有使用该 interface 的函数
+- TypeScript 只在 interface 有该字段时才报错——如果 interface 也漏了字段，编译器不会提醒
+- 凡是看到硬编码的空字符串/默认值，想想是不是该从数据源读
+
+---
+
+## 10. iron-session 会话过期导致频繁重新登录
+
+**现象：** 管理后台每次切换页面、或者去前台逛一圈回来，就要重新输密码。
+
+**原因：** 
+1. iron-session 默认 `ttl` 为 0（浏览器会话级 cookie，关标签页即失效）
+2. 没有设置 `maxAge`，cookie 在浏览器端的持久化不可靠
+3. 登录页不做已有 session 检查，每次访问都弹出密码框
+
+**解决：**
+```typescript
+// lib/auth.ts
+export const sessionOptions: SessionOptions = {
+  ttl: 60 * 60 * 24 * 7,       // 服务端：7 天过期
+  cookieOptions: {
+    maxAge: 60 * 60 * 24 * 7,  // 浏览器端：7 天
+  },
+};
+
+// app/admin/page.tsx —— 登录页自动跳过
+useEffect(() => {
+  fetch("/api/games?pageSize=1").then(res => {
+    if (res.ok) router.replace("/admin/games");
+    else setChecking(false);
+  });
+}, []);
+```
+
+**教训：** 每次配置 session/cookie 库时，第一时间设 `ttl` 和 `maxAge`，别依赖默认值。
+
+---
+
+## 11. "返回前台" 链接的语义设计
+
+**需求：** 用户希望通过「← 返回前台」退出管理模式，下次访问后台需要重新输密码。
+
+**实现：** 不能用 `<Link>` 纯跳转，因为 session 还在。需要：
+```typescript
+// 改为 button + fetch 登出
+async function handleLeave() {
+  await fetch("/api/auth/logout", { method: "POST" });  // 销毁 session
+  router.push("/");  // 然后跳转首页
+}
+```
+
+**设计要点：**
+- 在管理页面之间随意切换 → session 保留，无需重新登录
+- 点击「← 返回前台」→ 主动销毁 session → 等同于"退出管理模式"
+- 直接关浏览器 / 手动访问首页 → session 保留，回后台免登录
+
+---
+
 ## 项目核心文件架构速查
 
 ```

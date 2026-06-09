@@ -55,6 +55,24 @@ const emptyForm: FormData = {
   notes: "",
 };
 
+interface IGDBResult {
+  igdbId: number;
+  title: string;
+  summary: string | null;
+  releaseDate: string | null;
+  coverImageUrl: string | null;
+  screenshots: string[];
+  genres: string[];
+  platforms: string[];
+  developer: string | null;
+  publisher: string | null;
+}
+
+/** Steam 封面 URL 是固定格式，可直接拼接 */
+function steamCoverUrl(appId: string): string {
+  return `https://shared.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg`;
+}
+
 export default function AdminGamesPage() {
   const router = useRouter();
   const [games, setGames] = useState<Game[]>([]);
@@ -64,6 +82,11 @@ export default function AdminGamesPage() {
   const [form, setForm] = useState<FormData>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+
+  // IGDB search
+  const [igdbQuery, setIgdbQuery] = useState("");
+  const [igdbResults, setIgdbResults] = useState<IGDBResult[]>([]);
+  const [igdbSearching, setIgdbSearching] = useState(false);
 
   const fetchGames = useCallback(async () => {
     const res = await fetch("/api/games?pageSize=100");
@@ -167,6 +190,36 @@ export default function AdminGamesPage() {
     } else {
       setMessage("删除失败");
     }
+  }
+
+  async function handleIGDBSearch() {
+    if (!igdbQuery.trim()) return;
+    setIgdbSearching(true);
+    try {
+      const res = await fetch(`/api/igdb/search?q=${encodeURIComponent(igdbQuery)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setIgdbResults(data.results);
+      }
+    } catch {
+      // IGDB not configured — silently ignore
+    } finally {
+      setIgdbSearching(false);
+    }
+  }
+
+  function fillFromIGDB(result: IGDBResult) {
+    setForm({
+      ...form,
+      title: result.title,
+      platforms: result.platforms.join(", "),
+      genres: result.genres.join(", "),
+      developer: result.developer ?? form.developer,
+      publisher: result.publisher ?? form.publisher,
+      coverImageUrl: result.coverImageUrl ?? form.coverImageUrl,
+    });
+    setIgdbResults([]);
+    setIgdbQuery("");
   }
 
   function startEdit(game: Game) {
@@ -289,11 +342,24 @@ export default function AdminGamesPage() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Steam App ID</label>
-            <input
-              value={form.steamAppId}
-              onChange={(e) => setForm({ ...form, steamAppId: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            />
+            <div className="flex gap-2">
+              <input
+                value={form.steamAppId}
+                onChange={(e) => setForm({ ...form, steamAppId: e.target.value })}
+                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (form.steamAppId.trim()) {
+                    setForm({ ...form, coverImageUrl: steamCoverUrl(form.steamAppId.trim()) });
+                  }
+                }}
+                className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
+              >
+                生成封面
+              </button>
+            </div>
           </div>
           <div className="sm:col-span-2">
             <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">封面图 URL</label>
@@ -323,6 +389,52 @@ export default function AdminGamesPage() {
             )}
           </div>
         </form>
+      </div>
+
+      {/* IGDB Search */}
+      <div className="mb-6 rounded-xl border border-purple-200 p-4 dark:border-purple-800">
+        <h3 className="mb-2 text-sm font-medium text-purple-700 dark:text-purple-300">
+          🔍 IGDB 搜索快速填充（需要配置 IGDB API Key）
+        </h3>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={igdbQuery}
+            onChange={(e) => setIgdbQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleIGDBSearch()}
+            placeholder="搜索游戏名称..."
+            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          />
+          <button
+            onClick={handleIGDBSearch}
+            disabled={igdbSearching}
+            className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
+          >
+            {igdbSearching ? "搜索中..." : "搜索"}
+          </button>
+        </div>
+        {igdbResults.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {igdbResults.map((r) => (
+              <div
+                key={r.igdbId}
+                className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-100 p-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                onClick={() => fillFromIGDB(r)}
+              >
+                {r.coverImageUrl && (
+                  <img src={r.coverImageUrl} alt={r.title} className="h-12 w-8 rounded object-cover" />
+                )}
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{r.title}</p>
+                  {r.releaseDate && (
+                    <p className="text-xs text-gray-500">{new Date(r.releaseDate).toLocaleDateString("zh-CN")}</p>
+                  )}
+                </div>
+                <span className="ml-auto text-xs text-purple-600">点击填充 →</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Game list */}

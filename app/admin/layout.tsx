@@ -1,10 +1,20 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+
+  async function handleLeave() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/");
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
@@ -22,12 +32,12 @@ export default function AdminLayout({
           >
             Steam 导入
           </Link>
-          <Link
-            href="/"
-            className="rounded-md px-3 py-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400"
+          <button
+            onClick={handleLeave}
+            className="cursor-pointer rounded-md px-3 py-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400"
           >
             ← 返回前台
-          </Link>
+          </button>
         </nav>
       </div>
       {children}

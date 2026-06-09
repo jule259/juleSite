@@ -8,10 +8,12 @@ export interface SessionData {
 export const sessionOptions: SessionOptions = {
   password: process.env.SESSION_SECRET ?? "dev-secret-change-in-production-please-use-at-least-32-characters",
   cookieName: "julesite-session",
+  ttl: 60 * 60 * 24 * 7, // 7 天有效，不用频繁登录
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,
     sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7, // cookie 也设 7 天
   },
 };
 
