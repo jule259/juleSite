@@ -13,9 +13,23 @@ const statusLabels: Record<string, string> = {
 };
 
 export default async function TimelinePage() {
-  const games = await prisma.game.findMany({
-    orderBy: [{ playYear: "desc" }, { playDate: "desc" }, { updatedAt: "desc" }],
-  });
+  let games;
+  try {
+    games = await prisma.game.findMany({
+      orderBy: [{ playYear: "desc" }, { playDate: "desc" }, { updatedAt: "desc" }],
+    });
+  } catch (error) {
+    console.error("TimelinePage error:", error);
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <h1 className="mb-8 text-3xl font-bold text-gray-900 dark:text-white">📅 游玩时间线</h1>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
+          <p className="font-semibold">数据库连接失败</p>
+          <p className="mt-1 text-sm">{String(error)}</p>
+        </div>
+      </div>
+    );
+  }
 
   // Normalize PostgreSQL arrays
   const parsed = games.map((g) => normalizeGameArrays(g));

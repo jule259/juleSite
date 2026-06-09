@@ -5,55 +5,63 @@ import { normalizeGameArrays } from "@/lib/utils";
 
 // GET /api/games?status=&platform=&genre=&year=&q=&sort=&order=&page=&pageSize=
 export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl;
+  try {
+    const { searchParams } = request.nextUrl;
 
-  const status = searchParams.get("status");
-  const platform = searchParams.get("platform");
-  const genre = searchParams.get("genre");
-  const year = searchParams.get("year");
-  const q = searchParams.get("q");
-  const sort = searchParams.get("sort") ?? "updatedAt";
-  const order = searchParams.get("order") ?? "desc";
-  const page = parseInt(searchParams.get("page") ?? "1");
-  const pageSize = parseInt(searchParams.get("pageSize") ?? "20");
+    const status = searchParams.get("status");
+    const platform = searchParams.get("platform");
+    const genre = searchParams.get("genre");
+    const year = searchParams.get("year");
+    const q = searchParams.get("q");
+    const sort = searchParams.get("sort") ?? "updatedAt";
+    const order = searchParams.get("order") ?? "desc";
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const pageSize = parseInt(searchParams.get("pageSize") ?? "20");
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {};
 
-  if (status) where.status = status;
-  if (year) where.playYear = parseInt(year);
+    if (status) where.status = status;
+    if (year) where.playYear = parseInt(year);
 
-  // PostgreSQL native array filtering
-  if (platform) where.platforms = { has: platform };
-  if (genre) where.genres = { has: genre };
-  if (q) {
-    where.OR = [
-      { title: { contains: q } },
-      { titleZh: { contains: q } },
-      { developer: { contains: q } },
-    ];
+    // PostgreSQL native array filtering
+    if (platform) where.platforms = { has: platform };
+    if (genre) where.genres = { has: genre };
+    if (q) {
+      where.OR = [
+        { title: { contains: q } },
+        { titleZh: { contains: q } },
+        { developer: { contains: q } },
+      ];
+    }
+
+    const [games, total] = await Promise.all([
+      prisma.game.findMany({
+        where,
+        orderBy: { [sort]: order },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.game.count({ where }),
+    ]);
+
+    // Normalize PostgreSQL arrays (Neon adapter may return string literals)
+    const normalizedGames = games.map(normalizeGameArrays);
+
+    return NextResponse.json({
+      games: normalizedGames,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    });
+  } catch (error) {
+    console.error("GET /api/games error:", error);
+    return NextResponse.json(
+      { error: "数据库查询失败", detail: String(error) },
+      { status: 500 },
+    );
   }
-
-  const [games, total] = await Promise.all([
-    prisma.game.findMany({
-      where,
-      orderBy: { [sort]: order },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.game.count({ where }),
-  ]);
-
-  // Normalize PostgreSQL arrays (Neon adapter may return string literals)
-  const normalizedGames = games.map(normalizeGameArrays);
-
-  return NextResponse.json({
-    games: normalizedGames,
-    total,
-    page,
-    pageSize,
-    totalPages: Math.ceil(total / pageSize),
-  });
 }
 
 // POST /api/games — admin only
