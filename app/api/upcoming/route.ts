@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/auth";
+import { normalizeGameArrays } from "@/lib/utils";
 
 // GET /api/upcoming
 export async function GET() {
   const games = await prisma.upcomingGame.findMany({
     orderBy: { releaseDate: "asc" },
   });
-  return NextResponse.json({ games });
+  return NextResponse.json({ games: games.map(normalizeGameArrays) });
 }
 
 // POST /api/upcoming — admin only

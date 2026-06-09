@@ -25,6 +25,12 @@ interface Game {
   playTimeHours: number | null;
 }
 
+/** Ensure value is an array (defense against PostgreSQL array literals) */
+function asArray(v: unknown): string[] {
+  if (Array.isArray(v)) return v;
+  return [];
+}
+
 export default function StatsPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +89,7 @@ export default function StatsPage() {
   // Platform distribution
   const platformCount: Record<string, number> = {};
   games.forEach((g) => {
-    g.platforms.forEach((p) => {
+    asArray(g.platforms).forEach((p) => {
       platformCount[p] = (platformCount[p] ?? 0) + 1;
     });
   });
@@ -91,7 +97,7 @@ export default function StatsPage() {
   // Genre distribution
   const genreCount: Record<string, number> = {};
   games.forEach((g) => {
-    g.genres.forEach((genre) => {
+    asArray(g.genres).forEach((genre) => {
       genreCount[genre] = (genreCount[genre] ?? 0) + 1;
     });
   });

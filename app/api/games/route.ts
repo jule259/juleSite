@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/auth";
+import { normalizeGameArrays } from "@/lib/utils";
 
 // GET /api/games?status=&platform=&genre=&year=&q=&sort=&order=&page=&pageSize=
 export async function GET(request: NextRequest) {
@@ -43,9 +44,11 @@ export async function GET(request: NextRequest) {
     prisma.game.count({ where }),
   ]);
 
-  // PostgreSQL returns native arrays — no JSON parsing needed
+  // Normalize PostgreSQL arrays (Neon adapter may return string literals)
+  const normalizedGames = games.map(normalizeGameArrays);
+
   return NextResponse.json({
-    games,
+    games: normalizedGames,
     total,
     page,
     pageSize,

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { normalizeGameArrays } from "@/lib/utils";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -16,12 +17,8 @@ export default async function TimelinePage() {
     orderBy: [{ playYear: "desc" }, { playDate: "desc" }, { updatedAt: "desc" }],
   });
 
-  // Group by year
-  const parsed = games.map((g) => ({
-    ...g,
-    platforms: g.platforms as string[],
-    genres: g.genres as string[],
-  }));
+  // Normalize PostgreSQL arrays
+  const parsed = games.map((g) => normalizeGameArrays(g));
 
   const grouped: Record<number, typeof parsed> = {};
   parsed.forEach((g) => {

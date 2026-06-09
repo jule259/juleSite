@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/auth";
+import { normalizeGameArrays } from "@/lib/utils";
 
 // GET /api/games/[id]
 export async function GET(
@@ -14,7 +15,7 @@ export async function GET(
     return NextResponse.json({ error: "游戏不存在" }, { status: 404 });
   }
 
-  return NextResponse.json(game);
+  return NextResponse.json(normalizeGameArrays(game));
 }
 
 // PATCH /api/games/[id] — admin only
