@@ -1,14 +1,12 @@
 import { PrismaClient } from "../app/generated/prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { PrismaNeonHttp } from "@prisma/adapter-neon";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
 function createPrismaClient() {
-  const adapter = new PrismaLibSql({
-    url: process.env.DATABASE_URL ?? "file:dev.db",
-  });
+  const adapter = new PrismaNeonHttp(process.env.DATABASE_URL ?? "", { arrayMode: true });
   return new PrismaClient({ adapter });
 }
 

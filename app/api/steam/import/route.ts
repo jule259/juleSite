@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
       await prisma.game.create({
         data: {
           title: game.title,
-          platforms: JSON.stringify(["PC"]),
-          genres: JSON.stringify(game.genres ?? []),
+          platforms: ["PC"],
+          genres: game.genres ?? [],
           status: "backlog",
           playTimeHours: game.playTimeHours ?? null,
           developer: game.developer ?? null,

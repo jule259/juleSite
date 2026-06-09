@@ -20,25 +20,19 @@ export async function PATCH(
     if (body.title !== undefined) data.title = body.title;
     if (body.titleZh !== undefined) data.titleZh = body.titleZh;
     if (body.releaseDate !== undefined) data.releaseDate = body.releaseDate ? new Date(body.releaseDate) : null;
-    if (body.platforms !== undefined) data.platforms = JSON.stringify(body.platforms);
-    if (body.genres !== undefined) data.genres = JSON.stringify(body.genres);
+    if (body.platforms !== undefined) data.platforms = body.platforms;
+    if (body.genres !== undefined) data.genres = body.genres;
     if (body.price !== undefined) data.price = body.price;
     if (body.summary !== undefined) data.summary = body.summary;
     if (body.coverImageUrl !== undefined) data.coverImageUrl = body.coverImageUrl;
-    if (body.screenshots !== undefined) data.screenshots = JSON.stringify(body.screenshots);
+    if (body.screenshots !== undefined) data.screenshots = body.screenshots;
     if (body.steamAppId !== undefined) data.steamAppId = body.steamAppId;
     if (body.developer !== undefined) data.developer = body.developer;
     if (body.publisher !== undefined) data.publisher = body.publisher;
     if (body.isInterested !== undefined) data.isInterested = body.isInterested;
 
     const game = await prisma.upcomingGame.update({ where: { id }, data });
-
-    return NextResponse.json({
-      ...game,
-      platforms: JSON.parse(game.platforms),
-      genres: JSON.parse(game.genres),
-      screenshots: JSON.parse(game.screenshots),
-    });
+    return NextResponse.json(game);
   } catch (error) {
     console.error("更新即将发售游戏失败:", error);
     return NextResponse.json({ error: "更新失败" }, { status: 500 });

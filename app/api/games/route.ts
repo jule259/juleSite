@@ -10,25 +10,21 @@ export async function GET(request: NextRequest) {
   const platform = searchParams.get("platform");
   const genre = searchParams.get("genre");
   const year = searchParams.get("year");
-  const q = searchParams.get("q"); // search query
+  const q = searchParams.get("q");
   const sort = searchParams.get("sort") ?? "updatedAt";
   const order = searchParams.get("order") ?? "desc";
   const page = parseInt(searchParams.get("page") ?? "1");
   const pageSize = parseInt(searchParams.get("pageSize") ?? "20");
 
-  // Build where clause
-  const where: Record<string, unknown> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = {};
 
   if (status) where.status = status;
   if (year) where.playYear = parseInt(year);
 
-  // SQLite doesn't support array contains, so we use LIKE for platform/genre
-  if (platform) {
-    where.platforms = { contains: platform };
-  }
-  if (genre) {
-    where.genres = { contains: genre };
-  }
+  // PostgreSQL native array filtering
+  if (platform) where.platforms = { has: platform };
+  if (genre) where.genres = { has: genre };
   if (q) {
     where.OR = [
       { title: { contains: q } },
@@ -47,16 +43,9 @@ export async function GET(request: NextRequest) {
     prisma.game.count({ where }),
   ]);
 
-  // Parse JSON strings back to arrays for the frontend
-  const parsed = games.map((g) => ({
-    ...g,
-    platforms: JSON.parse(g.platforms),
-    genres: JSON.parse(g.genres),
-    screenshots: JSON.parse(g.screenshots),
-  }));
-
+  // PostgreSQL returns native arrays — no JSON parsing needed
   return NextResponse.json({
-    games: parsed,
+    games,
     total,
     page,
     pageSize,
@@ -77,8 +66,8 @@ export async function POST(request: NextRequest) {
       data: {
         title: body.title,
         titleZh: body.titleZh ?? null,
-        platforms: JSON.stringify(body.platforms ?? []),
-        genres: JSON.stringify(body.genres ?? []),
+        platforms: body.platforms ?? [],
+        genres: body.genres ?? [],
         status: body.status ?? "backlog",
         rating: body.rating ?? null,
         difficulty: body.difficulty ?? null,
@@ -90,21 +79,13 @@ export async function POST(request: NextRequest) {
         publisher: body.publisher ?? null,
         steamAppId: body.steamAppId ?? null,
         coverImageUrl: body.coverImageUrl ?? null,
-        screenshots: JSON.stringify(body.screenshots ?? []),
+        screenshots: body.screenshots ?? [],
         notes: body.notes ?? null,
         isRecommended: body.isRecommended ?? false,
       },
     });
 
-    return NextResponse.json(
-      {
-        ...game,
-        platforms: JSON.parse(game.platforms),
-        genres: JSON.parse(game.genres),
-        screenshots: JSON.parse(game.screenshots),
-      },
-      { status: 201 }
-    );
+    return NextResponse.json(game, { status: 201 });
   } catch (error) {
     console.error("创建游戏失败:", error);
     return NextResponse.json({ error: "创建游戏失败" }, { status: 500 });

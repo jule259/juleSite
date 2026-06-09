@@ -14,12 +14,7 @@ export async function GET(
     return NextResponse.json({ error: "游戏不存在" }, { status: 404 });
   }
 
-  return NextResponse.json({
-    ...game,
-    platforms: JSON.parse(game.platforms),
-    genres: JSON.parse(game.genres),
-    screenshots: JSON.parse(game.screenshots),
-  });
+  return NextResponse.json(game);
 }
 
 // PATCH /api/games/[id] — admin only
@@ -37,11 +32,10 @@ export async function PATCH(
     const body = await request.json();
     const data: Record<string, unknown> = {};
 
-    // Only include fields that were sent
     if (body.title !== undefined) data.title = body.title;
     if (body.titleZh !== undefined) data.titleZh = body.titleZh;
-    if (body.platforms !== undefined) data.platforms = JSON.stringify(body.platforms);
-    if (body.genres !== undefined) data.genres = JSON.stringify(body.genres);
+    if (body.platforms !== undefined) data.platforms = body.platforms;
+    if (body.genres !== undefined) data.genres = body.genres;
     if (body.status !== undefined) data.status = body.status;
     if (body.rating !== undefined) data.rating = body.rating;
     if (body.difficulty !== undefined) data.difficulty = body.difficulty;
@@ -53,21 +47,12 @@ export async function PATCH(
     if (body.publisher !== undefined) data.publisher = body.publisher;
     if (body.steamAppId !== undefined) data.steamAppId = body.steamAppId;
     if (body.coverImageUrl !== undefined) data.coverImageUrl = body.coverImageUrl;
-    if (body.screenshots !== undefined) data.screenshots = JSON.stringify(body.screenshots);
+    if (body.screenshots !== undefined) data.screenshots = body.screenshots;
     if (body.notes !== undefined) data.notes = body.notes;
     if (body.isRecommended !== undefined) data.isRecommended = body.isRecommended;
 
-    const game = await prisma.game.update({
-      where: { id },
-      data,
-    });
-
-    return NextResponse.json({
-      ...game,
-      platforms: JSON.parse(game.platforms),
-      genres: JSON.parse(game.genres),
-      screenshots: JSON.parse(game.screenshots),
-    });
+    const game = await prisma.game.update({ where: { id }, data });
+    return NextResponse.json(game);
   } catch (error) {
     console.error("更新游戏失败:", error);
     return NextResponse.json({ error: "更新游戏失败" }, { status: 500 });

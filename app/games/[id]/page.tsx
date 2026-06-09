@@ -24,9 +24,9 @@ export default async function GameDetailPage({ params }: Props) {
     notFound();
   }
 
-  const platforms: string[] = JSON.parse(game.platforms);
-  const genres: string[] = JSON.parse(game.genres);
-  const screenshots: string[] = JSON.parse(game.screenshots);
+  const platforms: string[] = game.platforms as string[];
+  const genres: string[] = game.genres as string[];
+  const screenshots: string[] = game.screenshots as string[];
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">

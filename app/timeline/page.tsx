@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 const statusLabels: Record<string, string> = {
   completed: "✅ 已通关",
   playing: "🎮 在玩",
@@ -14,11 +16,11 @@ export default async function TimelinePage() {
     orderBy: [{ playYear: "desc" }, { playDate: "desc" }, { updatedAt: "desc" }],
   });
 
-  // Parse and group by year
+  // Group by year
   const parsed = games.map((g) => ({
     ...g,
-    platforms: JSON.parse(g.platforms) as string[],
-    genres: JSON.parse(g.genres) as string[],
+    platforms: g.platforms as string[],
+    genres: g.genres as string[],
   }));
 
   const grouped: Record<number, typeof parsed> = {};
