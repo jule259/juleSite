@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
 const navLinks = [
@@ -15,6 +15,7 @@ const navLinks = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -59,6 +60,20 @@ export default function Navbar() {
             aria-label="切换暗色模式"
           >
             {dark ? '☀️' : '🌙'}
+          </button>
+          <button
+            onClick={async () => {
+              await fetch("/api/auth/logout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ scope: "site" }),
+              });
+              router.push("/login");
+            }}
+            className="ml-1 rounded-md px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+            title="退出登录"
+          >
+            退出
           </button>
         </div>
       </nav>

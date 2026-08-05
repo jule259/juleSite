@@ -1,12 +1,11 @@
 import "dotenv/config";
-import { PrismaClient } from "../app/generated/prisma/client";
-import { PrismaNeonHttp } from "@prisma/adapter-neon";
-
-const adapter = new PrismaNeonHttp(process.env.DATABASE_URL ?? "", { arrayMode: true });
-const prisma = new PrismaClient({ adapter });
+import { prisma } from "../lib/prisma";
 
 async function main() {
   console.log("🌱 开始添加种子数据...");
+
+  // 幂等：重复运行时先清空已存在的种子数据
+  await prisma.game.deleteMany();
 
   const games = [
     {

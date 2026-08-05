@@ -2,6 +2,8 @@ import { getIronSession, SessionOptions } from "iron-session";
 import { cookies } from "next/headers";
 
 export interface SessionData {
+  isAuthenticated: boolean;
+  username: string;
   isAdmin: boolean;
 }
 
@@ -26,4 +28,9 @@ export async function getSession() {
 export async function isAdmin(): Promise<boolean> {
   const session = await getSession();
   return session.isAdmin === true;
+}
+
+export async function isAuthenticated(): Promise<boolean> {
+  const session = await getSession();
+  return session.isAuthenticated === true;
 }

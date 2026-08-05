@@ -1,28 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function AdminLoginPage() {
+function LoginForm() {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from") ?? "/";
 
-  // 检查管理员登录状态
+  // 如果已有有效 session，直接跳转
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
-        if (data.isAdmin) {
-          router.replace("/admin/games");
+        if (data.isAuthenticated) {
+          router.replace(from);
         } else {
           setChecking(false);
         }
       })
       .catch(() => setChecking(false));
-  }, [router]);
+  }, [router, from]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,14 +33,14 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/admin-login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username, password }),
       });
 
       if (res.ok) {
-        router.push("/admin/games");
+        router.push(from);
       } else {
         const data = await res.json();
         setError(data.error ?? "登录失败");
@@ -60,13 +63,30 @@ export default function AdminLoginPage() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="w-full max-w-sm">
-        <h2 className="mb-6 text-center text-xl font-semibold text-gray-900 dark:text-white">
-          管理员登录
+        <h2 className="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-white">
+          请先登录
         </h2>
+        <p className="mb-6 text-center text-sm text-gray-500 dark:text-gray-400">
+          输入用户名和密码以访问网站
+        </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              请输入管理密码
+              用户名
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-gray-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              placeholder="用户名"
+              autoComplete="username"
+              required
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              密码
             </label>
             <input
               type="password"
@@ -74,6 +94,7 @@ export default function AdminLoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-gray-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
               placeholder="密码"
+              autoComplete="current-password"
               required
             />
           </div>
@@ -91,5 +112,20 @@ export default function AdminLoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+// 用 Suspense 包裹因为 useSearchParams
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="text-gray-500 dark:text-gray-400">加载中...</p>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
