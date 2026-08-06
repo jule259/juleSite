@@ -26,6 +26,9 @@ export default function Navbar() {
     }
   }, []);
 
+  // 未登录时只能访问 /login（由 middleware 保证），此时隐藏导航栏
+  if (pathname === "/login") return null;
+
   function toggleDark() {
     const next = !dark;
     setDark(next);
