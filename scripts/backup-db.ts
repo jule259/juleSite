@@ -16,11 +16,6 @@ if (target !== "local" && target !== "remote") {
 const urlEnv = target === "local" ? "LOCAL_DATABASE_URL" : "REMOTE_DATABASE_URL";
 const url = process.env[urlEnv];
 
-if (!url) {
-  console.error(`错误: .env 中未配置 ${urlEnv}`);
-  process.exit(1);
-}
-
 function parseUrl(raw: string) {
   const u = new URL(raw);
   return {
@@ -55,6 +50,10 @@ function timestamp(): string {
 }
 
 async function run() {
+  if (!url) {
+    console.error(`错误: .env 中未配置 ${urlEnv}`);
+    process.exit(1);
+  }
   const conn = parseUrl(url);
   const pgDump = findPgDump();
   const backupDir = resolve(process.cwd(), "backups");
