@@ -36,7 +36,8 @@ npx prisma format        # Format schema.prisma
 
 ## Git 工作流
 
-- **提交前必须先询问用户**：任何 `git commit`（含 push）前，先向用户确认，用户会在本地验证没问题后再确认提交。未经确认不要直接 commit / push。
+- **提交前必须先询问用户**：任何 `git commit` 前，先向用户确认，用户会在本地验证没问题后再确认提交。未经确认不要直接 commit。
+- **提交后立即 push**：用户确认提交后，直接 `git push` 触发 Vercel 部署，无需再次询问。
 
 ## Architecture
 

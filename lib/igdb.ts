@@ -84,15 +84,15 @@ export async function searchIGDB(query: string): Promise<SearchResult[]> {
   const games: IGDBGame[] = await res.json();
 
   return games.map((g) => {
+    // 以 IGDB 返回的 URL 路径为基准，只替换大小变体并补 https: 协议头
+    // （IGDB 返回的是协议相对路径，如 //images.igdb.com/igdb/image/upload/t_thumb/co670h.jpg）
     const coverUrl = g.cover?.url
-      ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover.url.replace("t_thumb", "t_cover_big")}`
+      ? `https:${g.cover.url.replace("t_thumb", "t_cover_big")}`
       : null;
 
     const screenshots = (g.screenshots ?? [])
       .slice(0, 5)
-      .map((s) =>
-        `https://images.igdb.com/igdb/image/upload/t_screenshot_big/${s.url}`
-      );
+      .map((s) => `https:${s.url.replace("t_thumb", "t_screenshot_big")}`);
 
     const developers = g.involved_companies
       ?.filter((c) => c.developer)
