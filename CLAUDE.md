@@ -148,6 +148,12 @@ cp .env.example .env                  # Fill in Neon URL + secrets
 npm run dev                           # All devices share the same Neon cloud DB
 ```
 
+## Production Deployment
+
+- 线上站点：<https://jule-site.vercel.app>（Vercel 部署，push 到 `main` 自动触发）
+- 线上凭据与本地 `.env` 独立，须在 Vercel 项目环境变量中单独配置（`SITE_USERNAME`/`SITE_PASSWORD`/`ADMIN_PASSWORD`/`SESSION_SECRET`/`DATABASE_URL` 等）
+- 注意：登录成功后用的是**整页跳转**（`window.location.href`）而非 `router.push` —— 生产环境客户端导航可能漏带刚设置的 httpOnly cookie，见 `app/login/page.tsx` 注释
+
 ## Key Dependencies
 
 | Package | Purpose |

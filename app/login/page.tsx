@@ -11,7 +11,9 @@ function LoginForm() {
   const [checking, setChecking] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const from = searchParams.get("from") ?? "/";
+  // 只允许站内相对路径，防止 /login?from=https://evil.com 开放重定向
+  const rawFrom = searchParams.get("from");
+  const from = rawFrom && rawFrom.startsWith("/") ? rawFrom : "/";
 
   // 如果已有有效 session，直接跳转
   useEffect(() => {
@@ -40,7 +42,10 @@ function LoginForm() {
       });
 
       if (res.ok) {
-        router.push(from);
+        // 生产环境（如 Vercel）下，router.push 的客户端导航可能漏带刚由登录接口设置的
+        // httpOnly cookie，中间件读不到 session 会立刻跳回登录页。改用整页跳转，
+        // 保证新 cookie 一定随请求发出（dev 与 prod 行为一致）。
+        window.location.href = from;
       } else {
         const data = await res.json();
         setError(data.error ?? "登录失败");
