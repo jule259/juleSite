@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -148,7 +149,7 @@ export default async function GameDetailPage({ params }: Props) {
         <div className="mb-8">
           <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">📝 我的感想</h2>
           <div className="prose prose-gray max-w-none dark:prose-invert rounded-xl border border-gray-200 p-6 dark:border-gray-800">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
               {game.notes}
             </ReactMarkdown>
           </div>

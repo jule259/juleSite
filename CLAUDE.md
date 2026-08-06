@@ -34,6 +34,10 @@ npx prisma format        # Format schema.prisma
 
 `npm install` automatically runs `prisma generate` via the `postinstall` script — no need to run it separately after cloning.
 
+## Git 工作流
+
+- **提交前必须先询问用户**：任何 `git commit`（含 push）前，先向用户确认，用户会在本地验证没问题后再确认提交。未经确认不要直接 commit / push。
+
 ## Architecture
 
 ```
