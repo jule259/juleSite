@@ -225,6 +225,27 @@ async function handleLeave() {
 
 ---
 
+## 12. Neon HTTP 适配器不支持批量写（deleteMany / createMany）
+
+**现象：** `npm run sync:to-remote` 报错 `Transactions are not supported in HTTP mode`，同步中断；且第一次失败后远程库被清空（DELETE 成功但写入失败）。
+
+**原因：** Prisma 7 在 Neon HTTP 适配器下，`deleteMany` / `createMany` 这类批量操作**会自动包事务**（即使没写 `$transaction`），而 Neon HTTP 模式不支持事务。单条操作（`findMany`、`create`、`delete`、`$executeRawUnsafe`）不需要事务，可正常使用。
+
+**解决：** 同步脚本对远程目标改用 raw DELETE + 逐条 create：
+```typescript
+await db.$executeRawUnsafe(`DELETE FROM "Game"`);   // raw 单语句不包事务
+for (const row of rows) {
+  await db.game.create({ data: row });              // 单条 create 不包事务
+}
+```
+
+**教训：**
+- Neon HTTP 下 `deleteMany` / `createMany` 不可用；批量写要换成 raw SQL 或逐条单写
+- 本地 pg 适配器无此限制，`$transaction` + `deleteMany`/`createMany` 正常
+- 同步到远程非原子：`DELETE` 成功但写入中断会留下空库/半数据，重跑即可（幂等），但推送前确保本地有一份完整数据兜底
+
+---
+
 ## 项目核心文件架构速查
 
 ```

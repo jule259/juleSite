@@ -11,7 +11,10 @@
     "db:local": "tsx scripts/switch-db.ts local",
     "db:remote": "tsx scripts/switch-db.ts remote",
     "sync:to-local": "tsx scripts/sync-db.ts to-local",
-    "sync:to-remote": "tsx scripts/sync-db.ts to-remote"
+    "sync:to-remote": "tsx scripts/sync-db.ts to-remote",
+    "db:studio": "prisma studio --port 5555",
+    "backup:local": "tsx scripts/backup-db.ts local",
+    "backup:remote": "tsx scripts/backup-db.ts remote"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

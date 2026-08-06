@@ -46,3 +46,5 @@ next-env.d.ts
 # database
 *.db
 *.db-journal
+
+# database backups — 备份文件提交到 git 保存历史（默认跟踪，不忽略）

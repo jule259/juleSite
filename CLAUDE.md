@@ -120,7 +120,7 @@ Prisma 7 uses an **adapter pattern** — database URL is NOT in `schema.prisma`,
 **Local / remote switching** (see `scripts/`):
 - `.env` keeps both `LOCAL_DATABASE_URL` and `REMOTE_DATABASE_URL`; `DATABASE_URL` is the *active* one, rewritten by `npm run db:local` / `npm run db:remote`.
 - `lib/prisma.ts` auto-selects the adapter by URL: `neon.tech` → `PrismaNeonHttp` (HTTP, `arrayMode: true`); anything else → `PrismaPg` (local TCP). Export `createPrismaClient(url?)` for scripts/seed that need a second connection.
-- `sync-db.ts` reads both URLs explicitly, independent of `DATABASE_URL`. Full overwrite (`deleteMany` + `createMany`, reusing source `id`/cuid). **Neon HTTP does not support transactions** — syncing *to remote* is non-atomic (idempotent rerun); syncing *to local* uses `$transaction`, atomic.
+- `sync-db.ts` reads both URLs explicitly, independent of `DATABASE_URL`. Full overwrite, reusing source `id`/cuid. **Neon HTTP does not support transactions AND auto-wraps `deleteMany`/`createMany` in one** — a remote target uses `$executeRawUnsafe` DELETE + per-row `create`; a local target uses `deleteMany` + `createMany` inside `$transaction` (atomic). Syncing *to remote* is non-atomic (idempotent rerun).
 - After switching DB, restart the dev server and, if the target DB has no tables yet, run `npx prisma db push`.
 
 ## Environment Variables

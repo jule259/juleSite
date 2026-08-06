@@ -1,6 +1,6 @@
 # JuleSite 项目总结
 
-> 最后更新：2026-08-05
+> 最后更新：2026-08-06
 
 ## 一句话概括
 
@@ -148,7 +148,8 @@ lib/
 
 scripts/
 ├── switch-db.ts        # 切换远程/本地数据库（改写 .env 的 DATABASE_URL）
-└── sync-db.ts          # 本地 ↔ 云端 双向全量同步
+├── sync-db.ts          # 本地 ↔ 云端 双向全量同步
+└── backup-db.ts        # pg_dump 备份本地/远程库到 backups/（带时间戳）
 
 prisma/
 ├── schema.prisma       # 数据模型定义
@@ -156,6 +157,9 @@ prisma/
 └── prisma.config.ts    # Prisma CLI 配置
 
 middleware.ts           # 全站认证中间件（检查 isAuthenticated）
+
+start-dev.bat           # Windows 启动开发服务器（ASCII，双击可用）
+stop-dev.bat            # Windows 关闭开发服务器（3000 端口 + 项目 node 进程）
 
 app/
 ├── layout.tsx          # 根布局（Navbar + Footer）
@@ -229,7 +233,12 @@ npm run build        # 生产构建
 npm run start        # 运行生产构建产物（需先 build）
 ```
 
-Windows 下也可以直接双击根目录的 `start-dev.bat`，等价于 `npm run dev`。
+Windows 下也可以直接双击根目录的 bat 脚本：
+
+- `start-dev.bat` —— 等价于 `npm run dev`
+- `stop-dev.bat` —— 关闭开发服务器：杀 3000 端口进程 + 命令行含 `juleSite` 的 node 进程（可清残留）
+
+> 两个 bat 均为**纯 ASCII** 编写，任何语言的 Windows 都能正常解析（中文 bat 在非中文系统 cmd 下会因编码损坏）。
 
 ---
 
@@ -246,8 +255,28 @@ npm run sync:to-remote    # 本地 → 远程（用本地数据覆盖云端）
 
 - **同步前目标库需已建表**（先对目标库跑一次 `npx prisma db push`）。
 - 同步会**清空目标表的现有数据**再整表覆盖，是破坏性操作，执行前确认方向。
+- **Neon HTTP 下 `deleteMany` / `createMany` 会自动包事务而不可用**：同步**到远程**时脚本改用 raw DELETE + 逐条 create。
 - 同步**到远程**（Neon HTTP 不支持事务）是非原子的：中途中断会留下半写状态，重跑一次即可（幂等）。
 - 同步**到本地**走数据库事务，中途失败整体回滚（原子）。
+
+---
+
+## 数据库备份
+
+`scripts/backup-db.ts` 用 pg_dump 把目标库导出为 SQL 文件（**表结构 + 数据**），保存到 `backups/` 目录（已 gitignore），文件名带时间戳，每次运行生成新文件、不会覆盖旧备份。
+
+```bash
+npm run backup:local     # 备份本地库 → backups/julesite-local-<时间戳>.sql
+npm run backup:remote    # 备份远程 Neon → backups/julesite-remote-<时间戳>.sql
+```
+
+恢复方式（psql 导入 SQL 文件）：
+
+```bash
+psql -U postgres -h localhost -d julesite -f "backups\julesite-local-<时间戳>.sql"
+```
+
+> 数据以 pg_dump 标准 COPY 格式导出。备份远程 Neon 时若遇连接问题，改用 Neon **direct** 连接串（不含 `-pooler`）。
 
 ---
 
@@ -296,9 +325,11 @@ npm run db:local        # 切到本地 PostgreSQL
 npm run db:remote       # 切到远程 Neon
 npm run sync:to-local   # 远程 → 本地 全量同步
 npm run sync:to-remote  # 本地 → 远程 全量同步
+npm run backup:local    # 备份本地库（pg_dump → backups/）
+npm run backup:remote   # 备份远程库
+npm run db:studio       # 数据库管理 GUI（固定端口 5555）
 npx prisma db push      # 同步 schema 到当前 DATABASE_URL（本地或远程）
 npx prisma generate     # 重新生成 Prisma Client
-npx prisma studio       # 数据库管理 GUI
 npx tsx prisma/seed.ts  # 运行种子数据（跟随当前库，幂等）
 ```
 

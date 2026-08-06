@@ -37,6 +37,26 @@ async function overwrite(client: AnyDelegate, rows: unknown[], label: string) {
   console.log(`  ✅ ${label}: ${rows.length} 条`);
 }
 
+// 远程 Neon：HTTP 不支持事务，deleteMany/createMany 会自动包事务而报错。
+// 改为 raw DELETE + 逐条 create（单条操作不需要事务）。
+async function overwriteRemote(
+  db: AnyDelegate,
+  rows: unknown[],
+  label: string,
+  modelName: "game" | "upcomingGame",
+  tableName: string,
+) {
+  await db.$executeRawUnsafe(`DELETE FROM "${tableName}"`);
+  if (rows.length === 0) {
+    console.log(`  ✅ ${label}: 0 条（已清空目标）`);
+    return;
+  }
+  for (const row of rows) {
+    await db[modelName].create({ data: row });
+  }
+  console.log(`  ✅ ${label}: ${rows.length} 条`);
+}
+
 async function main() {
   if (!sourceUrl || !targetUrl) {
     console.error("错误: 请在 .env 中配置 LOCAL_DATABASE_URL 和 REMOTE_DATABASE_URL");
@@ -56,10 +76,11 @@ async function main() {
     console.log(`   源数据: Game ${games.length} 条, UpcomingGame ${upcoming.length} 条`);
 
     if (isNeonUrl(targetUrl)) {
-      // Neon HTTP 不支持事务 → 顺序执行（非原子）。中断后重跑即可，全量覆盖幂等。
-      console.log("   ⚠️ 目标为远程 Neon（HTTP 不支持事务），先删后插非原子；中断后重跑即可");
-      await overwrite(target.game, games, "Game");
-      await overwrite(target.upcomingGame, upcoming, "UpcomingGame");
+      // Neon HTTP 不支持事务：deleteMany/createMany 会自动包事务而报错，
+      // 改用 raw DELETE + 逐条 create（单条操作不需要事务）。中断后重跑即可，全量覆盖幂等。
+      console.log("   ⚠️ 目标为远程 Neon（HTTP 不支持事务），改用 raw DELETE + 逐条 create");
+      await overwriteRemote(target, games, "Game", "game", "Game");
+      await overwriteRemote(target, upcoming, "UpcomingGame", "upcomingGame", "UpcomingGame");
     } else {
       // 本地目标支持事务 → 原子覆盖，中途失败整体回滚
       await target.$transaction(async (tx) => {
