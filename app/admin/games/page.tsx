@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 interface Game {
@@ -83,10 +83,13 @@ export default function AdminGamesPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
-  // IGDB search
+  // IGDB 搜索（输入自动弹出候选下拉）
   const [igdbQuery, setIgdbQuery] = useState("");
   const [igdbResults, setIgdbResults] = useState<IGDBResult[]>([]);
   const [igdbSearching, setIgdbSearching] = useState(false);
+  const [igdbSearched, setIgdbSearched] = useState(false);
+  const [igdbError, setIgdbError] = useState<string | null>(null);
+  const searchSeq = useRef(0); // 递增序号，用于丢弃过期搜索结果
 
   const fetchGames = useCallback(async () => {
     const res = await fetch("/api/games?pageSize=100");
@@ -192,21 +195,48 @@ export default function AdminGamesPage() {
     }
   }
 
-  async function handleIGDBSearch() {
-    if (!igdbQuery.trim()) return;
+  const runSearch = useCallback(async (q: string) => {
+    const trimmed = q.trim();
+    if (!trimmed) {
+      setIgdbResults([]);
+      setIgdbSearched(false);
+      setIgdbError(null);
+      return;
+    }
+    const seq = ++searchSeq.current;
     setIgdbSearching(true);
+    setIgdbError(null);
     try {
-      const res = await fetch(`/api/igdb/search?q=${encodeURIComponent(igdbQuery)}`);
+      const res = await fetch(`/api/igdb/search?q=${encodeURIComponent(trimmed)}`);
       if (res.ok) {
         const data = await res.json();
-        setIgdbResults(data.results);
+        if (searchSeq.current === seq) {
+          setIgdbResults(data.results);
+          setIgdbSearched(true);
+        }
+      } else if (searchSeq.current === seq) {
+        setIgdbResults([]);
+        setIgdbSearched(true);
+        setIgdbError("IGDB 搜索失败，请检查 API 配置");
       }
     } catch {
-      // IGDB not configured — silently ignore
+      if (searchSeq.current === seq) {
+        setIgdbResults([]);
+        setIgdbSearched(true);
+        setIgdbError("IGDB 搜索失败");
+      }
     } finally {
-      setIgdbSearching(false);
+      if (searchSeq.current === seq) setIgdbSearching(false);
     }
-  }
+  }, []);
+
+  // 输入防抖 300ms 自动搜索
+  useEffect(() => {
+    const q = igdbQuery.trim();
+    if (!q) return;
+    const t = setTimeout(() => runSearch(q), 300);
+    return () => clearTimeout(t);
+  }, [igdbQuery, runSearch]);
 
   function fillFromIGDB(result: IGDBResult) {
     setForm({
@@ -220,6 +250,8 @@ export default function AdminGamesPage() {
     });
     setIgdbResults([]);
     setIgdbQuery("");
+    setIgdbSearched(false);
+    setIgdbError(null);
   }
 
   function startEdit(game: Game) {
@@ -401,50 +433,64 @@ export default function AdminGamesPage() {
         </form>
       </div>
 
-      {/* IGDB Search */}
+      {/* IGDB Search — 输入自动弹出候选下拉 */}
       <div className="mb-6 rounded-xl border border-purple-200 p-4 dark:border-purple-800">
         <h3 className="mb-2 text-sm font-medium text-purple-700 dark:text-purple-300">
-          🔍 IGDB 搜索快速填充（需要配置 IGDB API Key）
+          🔍 IGDB 搜索快速填充（输入自动弹出候选，选中即填入表单）
         </h3>
-        <div className="flex gap-2">
+        <div className="relative">
           <input
             type="text"
             value={igdbQuery}
-            onChange={(e) => setIgdbQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleIGDBSearch()}
-            placeholder="搜索游戏名称..."
-            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            onChange={(e) => {
+              const v = e.target.value;
+              searchSeq.current++; // 作废所有在途的旧搜索
+              setIgdbQuery(v);
+              setIgdbResults([]);
+              setIgdbSearched(false);
+              setIgdbError(null);
+              setIgdbSearching(false);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && runSearch(igdbQuery)}
+            placeholder="输入游戏名，自动弹出候选..."
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           />
-          <button
-            onClick={handleIGDBSearch}
-            disabled={igdbSearching}
-            className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
-          >
-            {igdbSearching ? "搜索中..." : "搜索"}
-          </button>
+          {igdbQuery.trim() && (igdbSearching || igdbSearched) && (
+            <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-72 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+              {igdbSearching ? (
+                <p className="px-3 py-2 text-sm text-gray-500">搜索中...</p>
+              ) : igdbError ? (
+                <p className="px-3 py-2 text-sm text-red-500">{igdbError}</p>
+              ) : igdbResults.length === 0 ? (
+                <p className="px-3 py-2 text-sm text-gray-500">无匹配结果</p>
+              ) : (
+                igdbResults.map((r) => (
+                  <button
+                    key={r.igdbId}
+                    type="button"
+                    onClick={() => fillFromIGDB(r)}
+                    className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    {r.coverImageUrl && (
+                      <img src={r.coverImageUrl} alt="" className="h-12 w-8 shrink-0 rounded object-cover" />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-gray-900 dark:text-white">
+                        {r.title}
+                      </span>
+                      {r.releaseDate && (
+                        <span className="block text-xs text-gray-500">
+                          {new Date(r.releaseDate).toLocaleDateString("zh-CN")}
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 text-xs text-purple-600">填入 →</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
-        {igdbResults.length > 0 && (
-          <div className="mt-3 space-y-2">
-            {igdbResults.map((r) => (
-              <div
-                key={r.igdbId}
-                className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-100 p-2 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
-                onClick={() => fillFromIGDB(r)}
-              >
-                {r.coverImageUrl && (
-                  <img src={r.coverImageUrl} alt={r.title} className="h-12 w-8 rounded object-cover" />
-                )}
-                <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{r.title}</p>
-                  {r.releaseDate && (
-                    <p className="text-xs text-gray-500">{new Date(r.releaseDate).toLocaleDateString("zh-CN")}</p>
-                  )}
-                </div>
-                <span className="ml-auto text-xs text-purple-600">点击填充 →</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Game list */}
