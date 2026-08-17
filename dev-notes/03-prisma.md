@@ -99,7 +99,6 @@ model Game {
   id              String    @id @default(cuid())
   title           String
   rating          Int?
-  difficulty      Int?
   playTimeHours   Float?    // PostgreSQL double precision
   platforms       String[]  @default([])  // PostgreSQL TEXT[] 数组
   genres          String[]  @default([])
@@ -108,7 +107,6 @@ model Game {
   notes           String?                  // TEXT，支持 Markdown
   isRecommended   Boolean   @default(false)
   playYear        Int?
-  playDate        DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }

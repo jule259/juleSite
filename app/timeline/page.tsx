@@ -16,7 +16,7 @@ export default async function TimelinePage() {
   let games;
   try {
     games = await prisma.game.findMany({
-      orderBy: [{ playYear: "desc" }, { playDate: "desc" }, { updatedAt: "desc" }],
+      orderBy: [{ playYear: "desc" }, { updatedAt: "desc" }],
     });
   } catch (error) {
     console.error("TimelinePage error:", error);
@@ -110,11 +110,6 @@ export default async function TimelinePage() {
                             <span key={p} className="text-gray-400">{p}</span>
                           ))}
                         </div>
-                        {game.playDate && (
-                          <p className="mt-1 text-xs text-gray-400">
-                            {new Date(game.playDate).toLocaleDateString("zh-CN")}
-                          </p>
-                        )}
                       </div>
                     </div>
                   </Link>

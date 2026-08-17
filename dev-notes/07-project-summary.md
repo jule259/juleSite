@@ -35,11 +35,8 @@
 | `titleZh` | String? | 中文名 |
 | `status` | String | backlog / playing / completed / dropped / wishlist |
 | `rating` | Int? | 评分 1-10 |
-| `difficulty` | Int? | 难度 1-10 |
 | `playTimeHours` | Float? | 游玩时长 |
-| `completionPct` | Int? | 通关进度 (%) |
 | `playYear` | Int? | 游玩年份 |
-| `playDate` | DateTime? | 具体日期 |
 | `platforms` | String[] | PostgreSQL 原生 TEXT[] 数组 |
 | `genres` | String[] | PostgreSQL 原生 TEXT[] 数组 |
 | `developer` | String? | 开发商 |
@@ -71,7 +68,7 @@
 | `isInterested` | Boolean | 是否感兴趣 |
 | `createdAt` / `updatedAt` | DateTime | 时间戳 |
 
-> 注意：UpcomingGame **没有** rating / difficulty / playTimeHours / playYear / notes / status 等 Game 专属字段。
+> 注意：UpcomingGame **没有** rating / playTimeHours / playYear / notes / status 等 Game 专属字段。
 
 ---
 

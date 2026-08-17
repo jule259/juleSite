@@ -18,11 +18,8 @@ model Game {
   genres          String[]  @default([])
   status          String    @default("backlog")
   rating          Int?
-  difficulty      Int?
   playTimeHours   Float?
-  completionPct   Int?
   playYear        Int?
-  playDate        DateTime?
   developer       String?
   publisher       String?
   steamAppId      String?

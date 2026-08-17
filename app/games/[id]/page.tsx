@@ -64,11 +64,6 @@ export default async function GameDetailPage({ params }: Props) {
               ⭐ {game.rating} / 10
             </span>
           )}
-          {game.difficulty && (
-            <span className="rounded-full bg-red-100 px-3 py-1 text-sm text-red-800 dark:bg-red-900/30 dark:text-red-300">
-              🎯 难度 {game.difficulty}/10
-            </span>
-          )}
           {game.isRecommended && (
             <span className="rounded-full bg-green-100 px-3 py-1 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-300">
               👍 推荐
@@ -101,12 +96,6 @@ export default async function GameDetailPage({ params }: Props) {
           <div>
             <span className="text-xs text-gray-500 dark:text-gray-400">游玩时长</span>
             <p className="font-medium text-gray-900 dark:text-white">{game.playTimeHours} 小时</p>
-          </div>
-        )}
-        {game.completionPct !== null && (
-          <div>
-            <span className="text-xs text-gray-500 dark:text-gray-400">完成度</span>
-            <p className="font-medium text-gray-900 dark:text-white">{game.completionPct}%</p>
           </div>
         )}
         {game.steamAppId && (

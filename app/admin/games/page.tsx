@@ -11,11 +11,8 @@ interface Game {
   genres: string[];
   status: string;
   rating: number | null;
-  difficulty: number | null;
   playTimeHours: number | null;
-  completionPct: number | null;
   playYear: number | null;
-  playDate: string | null;
   developer: string | null;
   publisher: string | null;
   steamAppId: string | null;
@@ -31,13 +28,16 @@ interface FormData {
   platforms: string;
   genres: string;
   status: string;
+  isRecommended: string;
   rating: string;
   playYear: string;
+  playTimeHours: string;
   developer: string;
   publisher: string;
   steamAppId: string;
   coverImageUrl: string;
   notes: string;
+  screenshots: string[];
 }
 
 const emptyForm: FormData = {
@@ -46,13 +46,16 @@ const emptyForm: FormData = {
   platforms: "",
   genres: "",
   status: "backlog",
+  isRecommended: "true",
   rating: "",
   playYear: "",
+  playTimeHours: "",
   developer: "",
   publisher: "",
   steamAppId: "",
   coverImageUrl: "",
   notes: "",
+  screenshots: [],
 };
 
 interface IGDBResult {
@@ -71,6 +74,11 @@ interface IGDBResult {
 /** Steam 封面 URL 是固定格式，可直接拼接 */
 function steamCoverUrl(appId: string): string {
   return `https://shared.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg`;
+}
+
+/** 仅当 URL 以 http 开头才认为可预览，空串/普通文本直接跳过 */
+function isHttpUrl(url: string): boolean {
+  return url.trim().startsWith("http");
 }
 
 export default function AdminGamesPage() {
@@ -102,6 +110,7 @@ export default function AdminGamesPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchGames().finally(() => setLoading(false));
   }, [fetchGames]);
 
@@ -112,19 +121,37 @@ export default function AdminGamesPage() {
       platforms: game.platforms.join(", "),
       genres: game.genres.join(", "),
       status: game.status,
+      isRecommended: game.isRecommended ? "true" : "false",
       rating: game.rating?.toString() ?? "",
       playYear: game.playYear?.toString() ?? "",
+      playTimeHours: game.playTimeHours?.toString() ?? "",
       developer: game.developer ?? "",
       publisher: game.publisher ?? "",
       steamAppId: game.steamAppId ?? "",
       coverImageUrl: game.coverImageUrl ?? "",
       notes: game.notes ?? "",
+      screenshots: game.screenshots ?? [],
     });
   }
 
   function resetForm() {
     setEditing(null);
     setForm(emptyForm);
+  }
+
+  function updateScreenshot(index: number, value: string) {
+    setForm({
+      ...form,
+      screenshots: form.screenshots.map((s, i) => (i === index ? value : s)),
+    });
+  }
+
+  function addScreenshot() {
+    setForm({ ...form, screenshots: [...form.screenshots, ""] });
+  }
+
+  function removeScreenshot(index: number) {
+    setForm({ ...form, screenshots: form.screenshots.filter((_, i) => i !== index) });
   }
 
   function parseForm(): Record<string, unknown> {
@@ -140,13 +167,16 @@ export default function AdminGamesPage() {
         .map((s) => s.trim())
         .filter(Boolean),
       status: form.status,
+      isRecommended: form.isRecommended === "true",
       rating: form.rating ? parseInt(form.rating) : null,
       playYear: form.playYear ? parseInt(form.playYear) : null,
+      playTimeHours: form.playTimeHours ? parseFloat(form.playTimeHours) : null,
       developer: form.developer || null,
       publisher: form.publisher || null,
       steamAppId: form.steamAppId || null,
       coverImageUrl: form.coverImageUrl || null,
       notes: form.notes || null,
+      screenshots: form.screenshots.map((s) => s.trim()).filter(Boolean),
     };
   }
 
@@ -247,6 +277,7 @@ export default function AdminGamesPage() {
       developer: result.developer ?? form.developer,
       publisher: result.publisher ?? form.publisher,
       coverImageUrl: result.coverImageUrl ?? form.coverImageUrl,
+      screenshots: result.screenshots.length > 0 ? result.screenshots : form.screenshots,
     });
     setIgdbResults([]);
     setIgdbQuery("");
@@ -281,157 +312,6 @@ export default function AdminGamesPage() {
           {message}
         </div>
       )}
-
-      {/* Form */}
-      <div className="mb-8 rounded-xl border border-gray-200 p-6 dark:border-gray-800">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-          {editing ? `编辑游戏：${editing.title}` : "添加新游戏"}
-        </h2>
-        <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">游戏名称 *</label>
-            <input
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-              required
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">中文名</label>
-            <input
-              value={form.titleZh}
-              onChange={(e) => setForm({ ...form, titleZh: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">状态</label>
-            <select
-              value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            >
-              {Object.entries(statusLabels).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">平台（逗号分隔）</label>
-            <input
-              value={form.platforms}
-              onChange={(e) => setForm({ ...form, platforms: e.target.value })}
-              placeholder="PC, PS5, Switch"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">类型（逗号分隔）</label>
-            <input
-              value={form.genres}
-              onChange={(e) => setForm({ ...form, genres: e.target.value })}
-              placeholder="RPG, Action"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">评分 (1-10)</label>
-            <input
-              type="number"
-              min="1"
-              max="10"
-              value={form.rating}
-              onChange={(e) => setForm({ ...form, rating: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">游玩年份</label>
-            <input
-              type="number"
-              value={form.playYear}
-              onChange={(e) => setForm({ ...form, playYear: e.target.value })}
-              placeholder="2024"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">开发商</label>
-            <input
-              value={form.developer}
-              onChange={(e) => setForm({ ...form, developer: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">发行商</label>
-            <input
-              value={form.publisher}
-              onChange={(e) => setForm({ ...form, publisher: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Steam App ID</label>
-            <div className="flex gap-2">
-              <input
-                value={form.steamAppId}
-                onChange={(e) => setForm({ ...form, steamAppId: e.target.value })}
-                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (form.steamAppId.trim()) {
-                    setForm({ ...form, coverImageUrl: steamCoverUrl(form.steamAppId.trim()) });
-                  }
-                }}
-                className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
-              >
-                生成封面
-              </button>
-            </div>
-          </div>
-          <div className="sm:col-span-2">
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">封面图 URL</label>
-            <input
-              value={form.coverImageUrl}
-              onChange={(e) => setForm({ ...form, coverImageUrl: e.target.value })}
-              placeholder="https://..."
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            />
-          </div>
-          <div className="sm:col-span-2 lg:col-span-3">
-            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">我的感想</label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              rows={8}
-              placeholder="支持 Markdown 语法，如 **粗体**、- 列表"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            />
-          </div>
-          <div className="sm:col-span-2 lg:col-span-3 flex gap-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-lg bg-gray-900 px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
-            >
-              {saving ? "保存中..." : editing ? "更新游戏" : "添加游戏"}
-            </button>
-            {editing && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="rounded-lg border border-gray-300 px-6 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-              >
-                取消编辑
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
 
       {/* IGDB Search — 输入自动弹出候选下拉 */}
       <div className="mb-6 rounded-xl border border-purple-200 p-4 dark:border-purple-800">
@@ -491,6 +371,213 @@ export default function AdminGamesPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Form */}
+      <div className="mb-8 rounded-xl border border-gray-200 p-6 dark:border-gray-800">
+        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+          {editing ? `编辑游戏：${editing.title}` : "添加新游戏"}
+        </h2>
+        <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">游戏名称 *</label>
+            <input
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              required
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">中文名</label>
+            <input
+              value={form.titleZh}
+              onChange={(e) => setForm({ ...form, titleZh: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">状态</label>
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            >
+              {Object.entries(statusLabels).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">是否推荐</label>
+            <select
+              value={form.isRecommended}
+              onChange={(e) => setForm({ ...form, isRecommended: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            >
+              <option value="true">👍 推荐</option>
+              <option value="false">不推荐</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">平台（逗号分隔）</label>
+            <input
+              value={form.platforms}
+              onChange={(e) => setForm({ ...form, platforms: e.target.value })}
+              placeholder="PC, PS5, Switch"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">类型（逗号分隔）</label>
+            <input
+              value={form.genres}
+              onChange={(e) => setForm({ ...form, genres: e.target.value })}
+              placeholder="RPG, Action"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">评分 (1-10)</label>
+            <input
+              type="number"
+              min="1"
+              max="10"
+              value={form.rating}
+              onChange={(e) => setForm({ ...form, rating: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">游玩年份</label>
+            <input
+              type="number"
+              value={form.playYear}
+              onChange={(e) => setForm({ ...form, playYear: e.target.value })}
+              placeholder="2024"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">游玩时长（小时）</label>
+            <input
+              type="number"
+              min="0"
+              step="any"
+              value={form.playTimeHours}
+              onChange={(e) => setForm({ ...form, playTimeHours: e.target.value })}
+              placeholder="12.5"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">开发商</label>
+            <input
+              value={form.developer}
+              onChange={(e) => setForm({ ...form, developer: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">发行商</label>
+            <input
+              value={form.publisher}
+              onChange={(e) => setForm({ ...form, publisher: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Steam App ID</label>
+            <div className="flex gap-2">
+              <input
+                value={form.steamAppId}
+                onChange={(e) => setForm({ ...form, steamAppId: e.target.value })}
+                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (form.steamAppId.trim()) {
+                    setForm({ ...form, coverImageUrl: steamCoverUrl(form.steamAppId.trim()) });
+                  }
+                }}
+                className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
+              >
+                生成封面
+              </button>
+            </div>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">封面图 URL</label>
+            <input
+              value={form.coverImageUrl}
+              onChange={(e) => setForm({ ...form, coverImageUrl: e.target.value })}
+              placeholder="https://..."
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <div className="sm:col-span-2 lg:col-span-3">
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">我的感想</label>
+            <textarea
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              rows={8}
+              placeholder="支持 Markdown 语法，如 **粗体**、- 列表"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <div className="sm:col-span-2 lg:col-span-3">
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">截图 URL（每行一张，保存后自动过滤空行）</label>
+            <div className="space-y-2">
+              {form.screenshots.map((url, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={url}
+                    onChange={(e) => updateScreenshot(i, e.target.value)}
+                    placeholder="https://images.igdb.com/..."
+                    className="w-full flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  />
+                  {isHttpUrl(url) && (
+                    <img src={url.trim()} alt="" className="h-12 w-20 shrink-0 rounded object-cover" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeScreenshot(i)}
+                    className="shrink-0 rounded-lg border border-red-300 px-2 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+                  >
+                    删除
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={addScreenshot}
+              className="mt-2 rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              + 添加一张
+            </button>
+          </div>
+          <div className="sm:col-span-2 lg:col-span-3 flex gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-lg bg-gray-900 px-6 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+            >
+              {saving ? "保存中..." : editing ? "更新游戏" : "添加游戏"}
+            </button>
+            {editing && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="rounded-lg border border-gray-300 px-6 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                取消编辑
+              </button>
+            )}
+          </div>
+        </form>
       </div>
 
       {/* Game list */}

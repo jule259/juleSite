@@ -39,11 +39,8 @@ export async function PATCH(
     if (body.genres !== undefined) data.genres = body.genres;
     if (body.status !== undefined) data.status = body.status;
     if (body.rating !== undefined) data.rating = body.rating;
-    if (body.difficulty !== undefined) data.difficulty = body.difficulty;
     if (body.playTimeHours !== undefined) data.playTimeHours = body.playTimeHours;
-    if (body.completionPct !== undefined) data.completionPct = body.completionPct;
     if (body.playYear !== undefined) data.playYear = body.playYear;
-    if (body.playDate !== undefined) data.playDate = body.playDate ? new Date(body.playDate) : null;
     if (body.developer !== undefined) data.developer = body.developer;
     if (body.publisher !== undefined) data.publisher = body.publisher;
     if (body.steamAppId !== undefined) data.steamAppId = body.steamAppId;
