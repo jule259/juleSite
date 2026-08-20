@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import CoverImage from "@/components/CoverImage";
 
 interface Game {
   id: string;
@@ -192,7 +193,7 @@ export default function GamesPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="animate-pulse rounded-xl border border-gray-200 p-4 dark:border-gray-800">
-              <div className="mb-3 h-32 rounded-lg bg-gray-200 dark:bg-gray-800" />
+              <div className="mb-3 aspect-[3/4] w-full rounded-lg bg-gray-200 dark:bg-gray-800" />
               <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-800" />
             </div>
           ))}
@@ -206,18 +207,12 @@ export default function GamesPage() {
                 href={`/games/${game.id}`}
                 className="group rounded-xl border border-gray-200 p-4 transition-shadow hover:shadow-lg dark:border-gray-800"
               >
-                {game.coverImageUrl ? (
-                  <img
-                    src={game.coverImageUrl}
-                    alt={game.title}
-                    className="mb-3 h-32 w-full rounded-lg object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="mb-3 flex h-32 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
-                    <span className="text-3xl">🎮</span>
-                  </div>
-                )}
+                <CoverImage
+                  src={game.coverImageUrl}
+                  alt={game.title}
+                  className="mb-3 aspect-[3/4] w-full rounded-lg object-cover"
+                  emojiClassName="text-3xl"
+                />
                 <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
                   {game.title}
                   {game.titleZh && <span className="ml-1 text-sm font-normal text-gray-400">({game.titleZh})</span>}

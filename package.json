@@ -14,7 +14,8 @@
     "sync:to-remote": "tsx scripts/sync-db.ts to-remote",
     "db:studio": "prisma studio --port 5555",
     "backup:local": "tsx scripts/backup-db.ts local",
-    "backup:remote": "tsx scripts/backup-db.ts remote"
+    "backup:remote": "tsx scripts/backup-db.ts remote",
+    "migrate:covers": "tsx scripts/migrate-covers.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

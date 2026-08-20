@@ -215,7 +215,7 @@ export default function AdminUpcomingPage() {
                 onClick={() => fillFromIGDB(r)}
               >
                 {r.coverImageUrl && (
-                  <img src={r.coverImageUrl} alt={r.title} className="h-12 w-8 rounded object-cover" />
+                  <img src={r.coverImageUrl} alt={r.title} className="aspect-[3/4] h-12 rounded object-cover" />
                 )}
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{r.title}</p>

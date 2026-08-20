@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import CoverImage from "@/components/CoverImage";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -42,11 +43,10 @@ export default async function GameDetailPage({ params }: Props) {
       {/* Header */}
       <div className="mb-8">
         {game.coverImageUrl && (
-          <img
+          <CoverImage
             src={game.coverImageUrl}
             alt={game.title}
-            className="mb-6 w-full rounded-xl object-cover shadow-md"
-            style={{ maxHeight: "300px" }}
+            className="mx-auto mb-6 aspect-[3/4] w-48 rounded-xl object-cover shadow-md md:w-64"
           />
         )}
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">

@@ -82,7 +82,7 @@ export async function convertSteamGames(games: SteamOwnedGame[]): Promise<Import
   return sorted.map((game) => ({
     title: game.name,
     steamAppId: game.appid.toString(),
-    coverImageUrl: `https://shared.steamstatic.com/store_item_assets/steam/apps/${game.appid}/header.jpg`,
+    coverImageUrl: `https://shared.steamstatic.com/store_item_assets/steam/apps/${game.appid}/library_600x900.jpg`,
     playTimeHours: Math.round((game.playtime_forever / 60) * 10) / 10, // minutes → hours
     developer: null, // Would need store API call (rate limited)
     publisher: null,

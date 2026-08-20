@@ -200,7 +200,7 @@ export default function SteamImportPage() {
                       <img
                         src={game.coverImageUrl}
                         alt={game.title}
-                        className="h-10 w-20 rounded object-cover"
+                        className="aspect-[3/4] h-12 rounded object-cover"
                         loading="lazy"
                       />
                     </td>

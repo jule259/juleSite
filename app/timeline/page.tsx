@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { normalizeGameArrays } from "@/lib/utils";
 import Link from "next/link";
+import CoverImage from "@/components/CoverImage";
 
 export const dynamic = "force-dynamic";
 
@@ -80,18 +81,12 @@ export default async function TimelinePage() {
                     className="block rounded-lg border border-gray-200 p-4 transition-shadow hover:shadow-md dark:border-gray-800"
                   >
                     <div className="flex items-start gap-4">
-                      {game.coverImageUrl ? (
-                        <img
-                          src={game.coverImageUrl}
-                          alt={game.title}
-                          className="h-16 w-28 shrink-0 rounded object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="flex h-16 w-28 shrink-0 items-center justify-center rounded bg-gray-100 dark:bg-gray-800">
-                          <span className="text-xl">🎮</span>
-                        </div>
-                      )}
+                      <CoverImage
+                        src={game.coverImageUrl}
+                        alt={game.title}
+                        className="aspect-[3/4] h-20 shrink-0 rounded object-cover"
+                        emojiClassName="text-xl"
+                      />
                       <div className="min-w-0 flex-1">
                         <h3 className="font-semibold text-gray-900 dark:text-white">
                           {game.title}

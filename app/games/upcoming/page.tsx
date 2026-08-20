@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import CoverImage from "@/components/CoverImage";
 
 interface UpcomingGame {
   id: string;
@@ -42,7 +43,7 @@ export default function UpcomingGamesPage() {
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="animate-pulse rounded-xl border border-gray-200 p-4 dark:border-gray-800">
-              <div className="mb-3 h-32 rounded-lg bg-gray-200 dark:bg-gray-800" />
+              <div className="mb-3 aspect-[3/4] w-full rounded-lg bg-gray-200 dark:bg-gray-800" />
               <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-800" />
             </div>
           ))}
@@ -72,18 +73,12 @@ export default function UpcomingGamesPage() {
                 key={game.id}
                 className="rounded-xl border border-gray-200 p-4 transition-shadow hover:shadow-md dark:border-gray-800"
               >
-                {game.coverImageUrl ? (
-                  <img
-                    src={game.coverImageUrl}
-                    alt={game.title}
-                    className="mb-3 h-40 w-full rounded-lg object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="mb-3 flex h-40 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
-                    <span className="text-4xl">🎮</span>
-                  </div>
-                )}
+                <CoverImage
+                  src={game.coverImageUrl}
+                  alt={game.title}
+                  className="mb-3 aspect-[3/4] w-full rounded-lg object-cover"
+                  emojiClassName="text-4xl"
+                />
                 <h3 className="font-semibold text-gray-900 dark:text-white">
                   {game.title}
                   {game.titleZh && <span className="ml-1 text-sm font-normal text-gray-400">({game.titleZh})</span>}

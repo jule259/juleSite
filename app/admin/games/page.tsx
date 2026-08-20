@@ -73,7 +73,7 @@ interface IGDBResult {
 
 /** Steam 封面 URL 是固定格式，可直接拼接 */
 function steamCoverUrl(appId: string): string {
-  return `https://shared.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg`;
+  return `https://shared.steamstatic.com/store_item_assets/steam/apps/${appId}/library_600x900.jpg`;
 }
 
 /** 仅当 URL 以 http 开头才认为可预览，空串/普通文本直接跳过 */
@@ -352,7 +352,7 @@ export default function AdminGamesPage() {
                     className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     {r.coverImageUrl && (
-                      <img src={r.coverImageUrl} alt="" className="h-12 w-8 shrink-0 rounded object-cover" />
+                      <img src={r.coverImageUrl} alt="" className="aspect-[3/4] h-12 shrink-0 rounded object-cover" />
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-gray-900 dark:text-white">
